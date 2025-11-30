@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>HookView — Webhook Tester</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="min-h-screen flex flex-col bg-gray-900 text-gray-100">
+
+<!-- NAVBAR -->
+<header class="bg-gray-900 border-b border-gray-800">
+    <div class="max-w-5xl mx-auto px-6 py-4 flex justify-between items-center">
+        <h1 class="text-xl font-semibold">HookView</h1>
+    </div>
+</header>
+
+<!-- MAIN CONTENT -->
+<main class="flex-1 flex flex-col items-center justify-center px-6">
+
+    <div class="max-w-xl mx-auto text-center">
+
+        <div class="mb-6">
+            <svg width="70" height="70" fill="none" viewBox="0 0 24 24"
+                 class="mx-auto text-purple-400">
+                <path d="M12 2C8 2 4.7 4.5 3.3 8h17.4C19.3 4.5
+                16 2 12 2zm8.7 10H3.3C4.7 15.5 8 18 12 18s7.3-2.5
+                8.7-6zM3 20h18v2H3z"
+                      fill="currentColor"></path>
+            </svg>
+        </div>
+
+        <h1 class="text-4xl font-bold mb-4">HookView</h1>
+
+        <p class="text-gray-300 text-lg leading-relaxed mb-10">
+            Create temporary webhook endpoints and inspect incoming requests in real time.
+            Perfect for debugging, development, and integration testing.
+        </p>
+
+        <form method="POST" action="/api/create" target="_blank">
+            <button
+                    class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl
+                       text-lg shadow-lg transition">
+                + Create new webhook
+            </button>
+        </form>
+
+        <p class="text-sm text-gray-500 mt-6">
+            Sessions are temporary — they reset on page refresh.
+        </p>
+
+    </div>
+
+</main>
+
+<!-- FOOTER -->
+<footer class="bg-gray-900 border-t border-gray-800 py-6 text-center text-sm text-gray-500 flex flex-col items-center gap-4">
+
+    <div>
+        Developed by
+        <a href="https://federicojuretich.com" target="_blank"
+           class="text-purple-400 hover:text-purple-300">
+            Federico Juretich
+        </a>
+    </div>
+
+    <!-- Social Icons -->
+    <div class="flex gap-6 justify-center items-center">
+
+        <!-- LinkedIn -->
+        <a href="https://linkedin.com/in/federicojuretich" target="_blank" class="hover:opacity-80 transition">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 432 432">
+                <path fill="#ffffff"
+                      d="M319 221.5q-8-10.5-30-10.5q-27 0-38 16t-11 45v146q0 5-3 8t-8 3h-76q-4 0-7.5-3t-3.5-8V148q0-4
+                         3.5-7.5t7.5-3.5h74q4 0 6.5 2t3.5 6v5q1 2 1 7q28-27 76-27q53 0 83 27t30 79v182q0 5-3.5
+                         8t-7.5 3h-78q-4 0-7.5-3t-3.5-8V254q0-22-8-32.5zM88 91.5Q73 107 51.5 107T15 91.5t-15-37T15
+                         18T51.5 3T88 18t15 36.5t-15 37zm13 56.5v270q0 5-3.5 8t-7.5 3H14q-5 0-8-3t-3-8V148q0-4
+                         3-7.5t8-3.5h76q4 0 7.5 3.5t3.5 7.5z"/>
+            </svg>
+        </a>
+
+        <!-- GitHub -->
+        <a href="https://github.com/fedejuret" target="_blank" class="hover:opacity-80 transition">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 432 416">
+                <path fill="#ffffff"
+                      d="M213.5 0q88.5 0 151 62.5T427 213q0 70-41 125.5T281 416q-14 2-14-11v-58q0-27-15-40q44-5
+                         70.5-27t26.5-77q0-34-22-58q11-26-2-57q-18-5-58 22q-26-7-54-7t-53 7q-18-12-32.5-17.5T107
+                         88h-6q-12 31-2 57q-22 24-22 58q0 55 27 77t70 27q-11 10-13 29q-42 18-62-18q-12-20-33-22q-2
+                         0-4.5.5t-5 3.5t8.5 9q14 7 23 31q1 2 2 4.5t6.5 9.5t13 10.5T130 371t30-2v36q0 13-14
+                         11q-64-22-105-77.5T0 213q0-88 62.5-150.5T213.5 0z"/>
+            </svg>
+        </a>
+
+        <!-- Personal Website Icon -->
+        <a href="https://federicojuretich.com" target="_blank" class="hover:opacity-80 transition">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28"
+                 viewBox="0 0 14 14" fill="#ffffff">
+                <g fill="none" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M7 13.5a6.5 6.5 0 1 0 0-13a6.5 6.5 0 0 0 0 13M.5 7h13"/>
+                    <path d="M9.5 7A11.22 11.22 0 0 1 7 13.5A11.22 11.22 0 0 1 4.5 7A11.22 11.22 0 0 1 7 .5A11.22 11.22 0 0 1 9.5 7"/>
+                </g>
+            </svg>
+        </a>
+
+    </div>
+</footer>
+
+
+</body>
+</html>

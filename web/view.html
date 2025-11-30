@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>HookView — Live Webhook Viewer</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        pre { white-space: pre-wrap; word-break: break-word; }
+    </style>
+</head>
+
+<body class="min-h-screen flex flex-col bg-gray-900 text-gray-100">
+
+<!-- NAVBAR -->
+<header class="bg-gray-900 border-b border-gray-800 sticky top-0 z-10">
+    <div class="max-w-5xl mx-auto px-6 py-4 flex justify-between items-center">
+
+        <h1 class="text-xl font-semibold">HookView</h1>
+
+        <div class="flex items-center gap-3">
+            <!-- New webhook -->
+            <a href="/api/create" target="_blank"
+               class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded-lg text-sm shadow transition">
+                + New webhook
+            </a>
+
+            <!-- Clear logs -->
+            <button id="clearLogsBtn"
+                    class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-lg shadow text-sm transition">
+                Clear logs
+            </button>
+        </div>
+    </div>
+</header>
+
+<!-- CONTENT -->
+<main class="max-w-5xl mx-auto px-6 py-6 w-full flex-1">
+
+    <div class="flex items-center gap-3 mb-4">
+        <h2 class="text-xl font-semibold">Webhook URL</h2>
+
+        <button id="copyBtn"
+                class="text-sm bg-gray-800 hover:bg-gray-700 text-white px-3 py-1 rounded shadow transition">
+            Copy
+        </button>
+    </div>
+
+    <code id="webhookUrl"
+          class="block bg-gray-950 border border-gray-800 p-4 rounded shadow
+                 text-purple-300 font-mono mb-6 break-all"></code>
+
+    <h2 class="text-lg font-semibold mb-2">Received events</h2>
+
+    <!-- EMPTY STATE -->
+    <div id="emptyState" class="flex flex-col items-center justify-center text-center py-20
+                               text-gray-400">
+        <div class="animate-pulse">
+            <svg xmlns="http://www.w3.org/2000/svg"
+                 class="h-14 w-14 mx-auto text-gray-600"
+                 fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                      d="M3 15a4 4 0 004 4h10a4 4 0 004-4v-3a4 4 0 00-4-4H7a4 4 0 00-4 4v3zm4-7h10m-6 4h.01"/>
+            </svg>
+        </div>
+        <p class="mt-4 text-lg animate-pulse">Waiting for your first webhook...</p>
+    </div>
+
+    <div id="events"
+         class="bg-gray-950 border border-gray-800 rounded p-4
+                h-[600px] overflow-auto space-y-4 hidden">
+    </div>
+</main>
+
+<!-- FOOTER -->
+<footer class="bg-gray-900 border-t border-gray-800 py-6 text-center text-sm text-gray-500 flex flex-col items-center gap-4">
+
+    <div>
+        Developed by
+        <a href="https://federicojuretich.com" target="_blank"
+           class="text-purple-400 hover:text-purple-300">
+            Federico Juretich
+        </a>
+    </div>
+
+    <!-- Social Icons -->
+    <div class="flex gap-6 justify-center items-center">
+
+        <!-- LinkedIn -->
+        <a href="https://linkedin.com/in/federicojuretich" target="_blank" class="hover:opacity-80 transition">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 432 432">
+                <path fill="#ffffff"
+                      d="M319 221.5q-8-10.5-30-10.5q-27 0-38 16t-11 45v146q0 5-3 8t-8 3h-76q-4 0-7.5-3t-3.5-8V148q0-4
+                         3.5-7.5t7.5-3.5h74q4 0 6.5 2t3.5 6v5q1 2 1 7q28-27 76-27q53 0 83 27t30 79v182q0 5-3.5
+                         8t-7.5 3h-78q-4 0-7.5-3t-3.5-8V254q0-22-8-32.5zM88 91.5Q73 107 51.5 107T15 91.5t-15-37T15
+                         18T51.5 3T88 18t15 36.5t-15 37zm13 56.5v270q0 5-3.5 8t-7.5 3H14q-5 0-8-3t-3-8V148q0-4
+                         3-7.5t8-3.5h76q4 0 7.5 3.5t3.5 7.5z"/>
+            </svg>
+        </a>
+
+        <!-- GitHub -->
+        <a href="https://github.com/fedejuret" target="_blank" class="hover:opacity-80 transition">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 432 416">
+                <path fill="#ffffff"
+                      d="M213.5 0q88.5 0 151 62.5T427 213q0 70-41 125.5T281 416q-14 2-14-11v-58q0-27-15-40q44-5
+                         70.5-27t26.5-77q0-34-22-58q11-26-2-57q-18-5-58 22q-26-7-54-7t-53 7q-18-12-32.5-17.5T107
+                         88h-6q-12 31-2 57q-22 24-22 58q0 55 27 77t70 27q-11 10-13 29q-42 18-62-18q-12-20-33-22q-2
+                         0-4.5.5t-5 3.5t8.5 9q14 7 23 31q1 2 2 4.5t6.5 9.5t13 10.5T130 371t30-2v36q0 13-14
+                         11q-64-22-105-77.5T0 213q0-88 62.5-150.5T213.5 0z"/>
+            </svg>
+        </a>
+
+        <!-- Personal Website Icon -->
+        <a href="https://federicojuretich.com" target="_blank" class="hover:opacity-80 transition">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28"
+                 viewBox="0 0 14 14" fill="#ffffff">
+                <g fill="none" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M7 13.5a6.5 6.5 0 1 0 0-13a6.5 6.5 0 0 0 0 13M.5 7h13"/>
+                    <path d="M9.5 7A11.22 11.22 0 0 1 7 13.5A11.22 11.22 0 0 1 4.5 7A11.22 11.22 0 0 1 7 .5A11.22 11.22 0 0 1 9.5 7"/>
+                </g>
+            </svg>
+        </a>
+
+    </div>
+</footer>
+
+
+<script>
+    const token = location.pathname.split("/").pop();
+    const webhookUrl = `${location.protocol}//${location.host}/h/${token}`;
+    const eventsDiv = document.getElementById("events");
+    const emptyState = document.getElementById("emptyState");
+
+    document.getElementById("webhookUrl").textContent = webhookUrl;
+
+    // Copy URL
+    const copyBtn = document.getElementById("copyBtn");
+    copyBtn.onclick = async () => {
+        await navigator.clipboard.writeText(webhookUrl);
+        copyBtn.textContent = "Copied!";
+        setTimeout(() => (copyBtn.textContent = "Copy"), 1500);
+    };
+
+    // Clear logs
+    const clearBtn = document.getElementById("clearLogsBtn");
+    clearBtn.onclick = () => {
+        eventsDiv.innerHTML = "";
+        eventsDiv.classList.add("hidden");
+        emptyState.classList.remove("hidden");
+    };
+
+    // Colors per method
+    const methodColors = {
+        GET: "bg-green-900 text-green-300",
+        POST: "bg-orange-900 text-orange-300",
+        PUT: "bg-blue-900 text-blue-300",
+        DELETE: "bg-red-900 text-red-300",
+    };
+    function colorForMethod(m) {
+        return methodColors[m] || "bg-gray-800 text-gray-200";
+    }
+
+    // WebSocket
+    const ws = new WebSocket(`ws://${location.host}/ws/${token}`);
+
+    ws.onmessage = (e) => {
+        const evt = JSON.parse(e.data);
+        renderEvent(evt);
+        emptyState.classList.add("hidden");
+        eventsDiv.classList.remove("hidden");
+    };
+
+    function renderEvent(evt) {
+        const wrapper = document.createElement("div");
+        wrapper.className = "border-b border-gray-800 pb-4";
+
+        wrapper.innerHTML = `
+            <div class="flex items-center justify-between mb-3">
+                <div class="flex gap-2 items-center">
+                    <span class="px-2 py-1 rounded text-xs ${colorForMethod(evt.method)}">
+                        ${evt.method}
+                    </span>
+                    <span class="text-xs text-gray-400">
+                        ${evt.received_at}
+                    </span>
+                    <span class="text-xs text-gray-400">
+                        — Status: <strong>${evt.status_code}</strong>
+                    </span>
+                </div>
+                <button class="text-red-400 hover:text-red-300">
+                    🗑️
+                </button>
+            </div>
+
+            <div class="bg-gray-900 border border-gray-800 p-3 rounded text-sm mb-2">
+                <strong>Path:</strong>
+                <code class="text-purple-300">${evt.path}</code>
+            </div>
+
+            <details class="mb-2">
+                <summary class="cursor-pointer text-sm text-gray-200 font-medium">
+                    Query params
+                </summary>
+                <pre class="mt-2 text-xs bg-black text-green-400 p-3 rounded">
+${JSON.stringify(evt.query, null, 2)}
+                </pre>
+            </details>
+
+            <details class="mb-2">
+                <summary class="cursor-pointer text-sm text-gray-200 font-medium">
+                    Headers
+                </summary>
+                <pre class="mt-2 text-xs bg-black text-blue-300 p-3 rounded">
+${JSON.stringify(evt.headers, null, 2)}
+                </pre>
+            </details>
+
+            <details>
+                <summary class="cursor-pointer text-sm text-gray-200 font-medium">
+                    Body
+                </summary>
+                <pre class="mt-2 text-xs bg-black text-yellow-300 p-3 rounded">
+${formatBody(evt.body)}
+                </pre>
+            </details>
+        `;
+
+        // Delete single log
+        wrapper.querySelector("button").onclick = () => {
+            wrapper.remove();
+            if (eventsDiv.children.length === 0) {
+                eventsDiv.classList.add("hidden");
+                emptyState.classList.remove("hidden");
+            }
+        };
+
+        // Newest first
+        if (eventsDiv.firstChild) {
+            eventsDiv.insertBefore(wrapper, eventsDiv.firstChild);
+        } else {
+            eventsDiv.appendChild(wrapper);
+        }
+    }
+
+    function formatBody(body) {
+        try { return JSON.stringify(JSON.parse(body), null, 2); }
+        catch { return body; }
+    }
+</script>
+
+</body>
+</html>
