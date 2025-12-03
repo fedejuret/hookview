@@ -7,8 +7,10 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -55,14 +57,23 @@ type Hub struct {
 	register   chan *Client
 	unregister chan *Client
 	broadcast  chan Broadcast
+	maxClients int
 }
 
 func newHub() *Hub {
+	maxClients := 1000
+	if maxClientsEnv := os.Getenv("MAX_WS_CLIENTS"); maxClientsEnv != "" {
+		if parsed, err := strconv.Atoi(maxClientsEnv); err == nil && parsed > 0 {
+			maxClients = parsed
+		}
+	}
+	
 	return &Hub{
 		clients:    make(map[*Client]bool),
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
 		broadcast:  make(chan Broadcast),
+		maxClients: maxClients,
 	}
 }
 
@@ -71,6 +82,11 @@ func (h *Hub) run() {
 		select {
 		case c := <-h.register:
 			h.mu.Lock()
+			if len(h.clients) >= h.maxClients {
+				h.mu.Unlock()
+				_ = c.conn.Close()
+				continue
+			}
 			h.clients[c] = true
 			h.mu.Unlock()
 
@@ -113,43 +129,143 @@ func (h *Hub) removeClient(c *Client) {
 	_ = c.conn.Close()
 }
 
+func (h *Hub) clientCount() int {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	return len(h.clients)
+}
+
+func (h *Hub) canRegister() bool {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	return len(h.clients) < h.maxClients
+}
+
 var hub = newHub()
 
-var upgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool {
-		return true
-	},
+var upgrader websocket.Upgrader
+
+func initUpgrader() {
+	allowedOrigins := make(map[string]bool)
+	
+	if originsEnv := os.Getenv("ALLOWED_ORIGINS"); originsEnv != "" {
+		origins := strings.Split(originsEnv, ",")
+		for _, origin := range origins {
+			origin = strings.TrimSpace(origin)
+			if origin != "" {
+				allowedOrigins[origin] = true
+			}
+		}
+	}
+	
+	upgrader = websocket.Upgrader{
+		CheckOrigin: func(r *http.Request) bool {
+			origin := r.Header.Get("Origin")
+			
+			if len(allowedOrigins) > 0 {
+				return allowedOrigins[origin]
+			}
+			
+			if origin == "" {
+				return false
+			}
+			
+			originURL, err := url.Parse(origin)
+			if err != nil {
+				return false
+			}
+			
+			requestHost := r.Host
+			if !strings.Contains(requestHost, ":") {
+				if originURL.Port() != "" {
+					requestHost = requestHost + ":" + originURL.Port()
+				}
+			}
+			
+			return originURL.Host == requestHost || originURL.Hostname() == strings.Split(requestHost, ":")[0]
+		},
+	}
+}
+
+type limiterEntry struct {
+	limiter   *rate.Limiter
+	lastUsed  time.Time
 }
 
 type IPRateLimiter struct {
-	limiters map[string]*rate.Limiter
-	mu       sync.Mutex
-	r        rate.Limit
-	b        int
+	entries     map[string]*limiterEntry
+	mu          sync.Mutex
+	r           rate.Limit
+	b           int
+	cleanupInterval time.Duration
+	maxIdleTime    time.Duration
+	stopCleanup    chan struct{}
 }
 
 func NewIPRateLimiter(r rate.Limit, b int) *IPRateLimiter {
-	return &IPRateLimiter{
-		limiters: make(map[string]*rate.Limiter),
-		r:        r,
-		b:        b,
+	limiter := &IPRateLimiter{
+		entries:        make(map[string]*limiterEntry),
+		r:              r,
+		b:              b,
+		cleanupInterval: 5 * time.Minute, 
+		maxIdleTime:     15 * time.Minute,
+		stopCleanup:     make(chan struct{}),
 	}
+	
+	go limiter.cleanup()
+	
+	return limiter
 }
 
 func (l *IPRateLimiter) getLimiter(ip string) *rate.Limiter {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	limiter, exists := l.limiters[ip]
+	entry, exists := l.entries[ip]
 	if !exists {
-		limiter = rate.NewLimiter(l.r, l.b)
-		l.limiters[ip] = limiter
+		entry = &limiterEntry{
+			limiter:  rate.NewLimiter(l.r, l.b),
+			lastUsed: time.Now(),
+		}
+		l.entries[ip] = entry
+	} else {
+		entry.lastUsed = time.Now()
 	}
-	return limiter
+	return entry.limiter
 }
 
 func (l *IPRateLimiter) Allow(ip string) bool {
 	return l.getLimiter(ip).Allow()
+}
+
+func (l *IPRateLimiter) cleanup() {
+	ticker := time.NewTicker(l.cleanupInterval)
+	defer ticker.Stop()
+	
+	for {
+		select {
+		case <-ticker.C:
+			l.cleanupInactive()
+		case <-l.stopCleanup:
+			return
+		}
+	}
+}
+
+func (l *IPRateLimiter) cleanupInactive() {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	
+	now := time.Now()
+	for ip, entry := range l.entries {
+		if now.Sub(entry.lastUsed) > l.maxIdleTime {
+			delete(l.entries, ip)
+		}
+	}
+}
+
+func (l *IPRateLimiter) Stop() {
+	close(l.stopCleanup)
 }
 
 var ipLimiter = NewIPRateLimiter(1, 5)
@@ -251,6 +367,11 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !hub.canRegister() {
+		http.Error(w, "server at capacity", http.StatusServiceUnavailable)
+		return
+	}
+
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		return
@@ -328,6 +449,7 @@ func main() {
 		port = "8080"
 	}
 
+	initUpgrader()
 	go hub.run()
 
 	mux := http.NewServeMux()

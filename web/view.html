@@ -19,13 +19,11 @@
         <h1 class="text-xl font-semibold">HookView</h1>
 
         <div class="flex items-center gap-3">
-            <!-- New webhook -->
             <a href="/api/create" target="_blank"
                class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded-lg text-sm shadow transition">
                 + New webhook
             </a>
 
-            <!-- Clear logs -->
             <button id="clearLogsBtn"
                     class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-lg shadow text-sm transition">
                 Clear logs
@@ -34,7 +32,6 @@
     </div>
 </header>
 
-<!-- CONTENT -->
 <main class="max-w-5xl mx-auto px-6 py-6 w-full flex-1">
 
     <div class="flex items-center gap-3 mb-4">
@@ -52,7 +49,6 @@
 
     <h2 class="text-lg font-semibold mb-2">Received events</h2>
 
-    <!-- EMPTY STATE -->
     <div id="emptyState" class="flex flex-col items-center justify-center text-center py-20
                                text-gray-400">
         <div class="animate-pulse">
@@ -72,7 +68,6 @@
     </div>
 </main>
 
-<!-- FOOTER -->
 <footer class="bg-gray-900 border-t border-gray-800 py-6 text-center text-sm text-gray-500 flex flex-col items-center gap-4">
 
     <div>
@@ -83,10 +78,8 @@
         </a>
     </div>
 
-    <!-- Social Icons -->
     <div class="flex gap-6 justify-center items-center">
 
-        <!-- LinkedIn -->
         <a href="https://linkedin.com/in/federicojuretich" target="_blank" class="hover:opacity-80 transition">
             <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 432 432">
                 <path fill="#ffffff"
@@ -98,7 +91,6 @@
             </svg>
         </a>
 
-        <!-- GitHub -->
         <a href="https://github.com/fedejuret" target="_blank" class="hover:opacity-80 transition">
             <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 432 416">
                 <path fill="#ffffff"
@@ -110,7 +102,6 @@
             </svg>
         </a>
 
-        <!-- Personal Website Icon -->
         <a href="https://federicojuretich.com" target="_blank" class="hover:opacity-80 transition">
             <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28"
                  viewBox="0 0 14 14" fill="#ffffff">
@@ -133,7 +124,6 @@
 
     document.getElementById("webhookUrl").textContent = webhookUrl;
 
-    // Copy URL
     const copyBtn = document.getElementById("copyBtn");
     copyBtn.onclick = async () => {
         await navigator.clipboard.writeText(webhookUrl);
@@ -141,7 +131,6 @@
         setTimeout(() => (copyBtn.textContent = "Copy"), 1500);
     };
 
-    // Clear logs
     const clearBtn = document.getElementById("clearLogsBtn");
     clearBtn.onclick = () => {
         eventsDiv.innerHTML = "";
@@ -149,7 +138,6 @@
         emptyState.classList.remove("hidden");
     };
 
-    // Colors per method
     const methodColors = {
         GET: "bg-green-900 text-green-300",
         POST: "bg-orange-900 text-orange-300",
@@ -160,7 +148,6 @@
         return methodColors[m] || "bg-gray-800 text-gray-200";
     }
 
-    // WebSocket
     const ws = new WebSocket(`ws://${location.host}/ws/${token}`);
 
     ws.onmessage = (e) => {
@@ -170,63 +157,45 @@
         eventsDiv.classList.remove("hidden");
     };
 
+    function escapeHtml(text) {
+        const div = document.createElement("div");
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
     function renderEvent(evt) {
         const wrapper = document.createElement("div");
         wrapper.className = "border-b border-gray-800 pb-4";
 
-        wrapper.innerHTML = `
-            <div class="flex items-center justify-between mb-3">
-                <div class="flex gap-2 items-center">
-                    <span class="px-2 py-1 rounded text-xs ${colorForMethod(evt.method)}">
-                        ${evt.method}
-                    </span>
-                    <span class="text-xs text-gray-400">
-                        ${evt.received_at}
-                    </span>
-                    <span class="text-xs text-gray-400">
-                        — Status: <strong>${evt.status_code}</strong>
-                    </span>
-                </div>
-                <button class="text-red-400 hover:text-red-300">
-                    🗑️
-                </button>
-            </div>
+        const header = document.createElement("div");
+        header.className = "flex items-center justify-between mb-3";
 
-            <div class="bg-gray-900 border border-gray-800 p-3 rounded text-sm mb-2">
-                <strong>Path:</strong>
-                <code class="text-purple-300">${evt.path}</code>
-            </div>
+        const headerLeft = document.createElement("div");
+        headerLeft.className = "flex gap-2 items-center";
 
-            <details class="mb-2">
-                <summary class="cursor-pointer text-sm text-gray-200 font-medium">
-                    Query params
-                </summary>
-                <pre class="mt-2 text-xs bg-black text-green-400 p-3 rounded">
-${JSON.stringify(evt.query, null, 2)}
-                </pre>
-            </details>
+        const methodSpan = document.createElement("span");
+        methodSpan.className = `px-2 py-1 rounded text-xs ${colorForMethod(evt.method)}`;
+        methodSpan.textContent = evt.method;
 
-            <details class="mb-2">
-                <summary class="cursor-pointer text-sm text-gray-200 font-medium">
-                    Headers
-                </summary>
-                <pre class="mt-2 text-xs bg-black text-blue-300 p-3 rounded">
-${JSON.stringify(evt.headers, null, 2)}
-                </pre>
-            </details>
+        const timeSpan = document.createElement("span");
+        timeSpan.className = "text-xs text-gray-400";
+        timeSpan.textContent = evt.received_at;
 
-            <details>
-                <summary class="cursor-pointer text-sm text-gray-200 font-medium">
-                    Body
-                </summary>
-                <pre class="mt-2 text-xs bg-black text-yellow-300 p-3 rounded">
-${formatBody(evt.body)}
-                </pre>
-            </details>
-        `;
+        const statusSpan = document.createElement("span");
+        statusSpan.className = "text-xs text-gray-400";
+        statusSpan.textContent = "— Status: ";
+        const statusStrong = document.createElement("strong");
+        statusStrong.textContent = String(evt.status_code);
+        statusSpan.appendChild(statusStrong);
 
-        // Delete single log
-        wrapper.querySelector("button").onclick = () => {
+        headerLeft.appendChild(methodSpan);
+        headerLeft.appendChild(timeSpan);
+        headerLeft.appendChild(statusSpan);
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.className = "text-red-400 hover:text-red-300";
+        deleteBtn.textContent = "🗑️";
+        deleteBtn.onclick = () => {
             wrapper.remove();
             if (eventsDiv.children.length === 0) {
                 eventsDiv.classList.add("hidden");
@@ -234,7 +203,58 @@ ${formatBody(evt.body)}
             }
         };
 
-        // Newest first
+        header.appendChild(headerLeft);
+        header.appendChild(deleteBtn);
+
+        const pathDiv = document.createElement("div");
+        pathDiv.className = "bg-gray-900 border border-gray-800 p-3 rounded text-sm mb-2";
+        const pathStrong = document.createElement("strong");
+        pathStrong.textContent = "Path:";
+        const pathCode = document.createElement("code");
+        pathCode.className = "text-purple-300";
+        pathCode.textContent = evt.path;
+        pathDiv.appendChild(pathStrong);
+        pathDiv.appendChild(document.createTextNode(" "));
+        pathDiv.appendChild(pathCode);
+
+        const queryDetails = document.createElement("details");
+        queryDetails.className = "mb-2";
+        const querySummary = document.createElement("summary");
+        querySummary.className = "cursor-pointer text-sm text-gray-200 font-medium";
+        querySummary.textContent = "Query params";
+        const queryPre = document.createElement("pre");
+        queryPre.className = "mt-2 text-xs bg-black text-green-400 p-3 rounded";
+        queryPre.textContent = JSON.stringify(evt.query, null, 2);
+        queryDetails.appendChild(querySummary);
+        queryDetails.appendChild(queryPre);
+
+        const headersDetails = document.createElement("details");
+        headersDetails.className = "mb-2";
+        const headersSummary = document.createElement("summary");
+        headersSummary.className = "cursor-pointer text-sm text-gray-200 font-medium";
+        headersSummary.textContent = "Headers";
+        const headersPre = document.createElement("pre");
+        headersPre.className = "mt-2 text-xs bg-black text-blue-300 p-3 rounded";
+        headersPre.textContent = JSON.stringify(evt.headers, null, 2);
+        headersDetails.appendChild(headersSummary);
+        headersDetails.appendChild(headersPre);
+
+        const bodyDetails = document.createElement("details");
+        const bodySummary = document.createElement("summary");
+        bodySummary.className = "cursor-pointer text-sm text-gray-200 font-medium";
+        bodySummary.textContent = "Body";
+        const bodyPre = document.createElement("pre");
+        bodyPre.className = "mt-2 text-xs bg-black text-yellow-300 p-3 rounded";
+        bodyPre.textContent = formatBody(evt.body);
+        bodyDetails.appendChild(bodySummary);
+        bodyDetails.appendChild(bodyPre);
+
+        wrapper.appendChild(header);
+        wrapper.appendChild(pathDiv);
+        wrapper.appendChild(queryDetails);
+        wrapper.appendChild(headersDetails);
+        wrapper.appendChild(bodyDetails);
+
         if (eventsDiv.firstChild) {
             eventsDiv.insertBefore(wrapper, eventsDiv.firstChild);
         } else {
@@ -243,8 +263,11 @@ ${formatBody(evt.body)}
     }
 
     function formatBody(body) {
-        try { return JSON.stringify(JSON.parse(body), null, 2); }
-        catch { return body; }
+        try { 
+            return JSON.stringify(JSON.parse(body), null, 2); 
+        } catch { 
+            return body; 
+        }
     }
 </script>
 
