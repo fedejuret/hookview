@@ -148,7 +148,9 @@
         return methodColors[m] || "bg-gray-800 text-gray-200";
     }
 
-    const ws = new WebSocket(`ws://${location.host}/ws/${token}`);
+    // Detectar automáticamente ws:// o wss:// según el protocolo actual
+    const wsProtocol = location.protocol === "https:" ? "wss:" : "ws:";
+    const ws = new WebSocket(`${wsProtocol}//${location.host}/ws/${token}`);
 
     ws.onmessage = (e) => {
         const evt = JSON.parse(e.data);
